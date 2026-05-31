@@ -1,0 +1,42 @@
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: test-upstream
+              uri: http://localhost:${wiremock.server.port:9080}
+              predicates:
+                - Path=/api/**
+              filters:
+                - StripPrefix=1
+  kafka:
+    bootstrap-servers: localhost:9092
+
+gateway:
+  admin-token: test-token
+  trusted-forwarded-headers: true
+  trusted-proxy-cidrs:
+    - 0.0.0.0/0
+  kafka:
+    enabled: false
+    abuse-topic: gateway.abuse-events.v1
+  audit:
+    enabled: false
+    persist-allowed-sample-rate: 0.0
+  rate-limit:
+    enabled: true
+    fail-open: true
+    window: PT1M
+    base-limit-per-minute: 5
+    tenant-base-limit-per-minute: 5
+    minimum-limit-per-minute: 1
+    allowlist-bypass: true
+    error-rate-threshold: 0.20
+    abuse-score-hard-block: 100
+    statistics-buckets: 2
+    access-list-cache-ttl: PT1M
+    statistics-ttl: PT5M
+    abuse-score-ttl: PT1H
+    response-error-statuses: [400, 401, 403, 404, 409, 422, 429]
+    route-policies: {}
