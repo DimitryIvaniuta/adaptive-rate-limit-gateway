@@ -1,0 +1,176 @@
+{
+  "info": {
+    "name": "Adaptive Rate Limit Gateway",
+    "description": "Postman collection for local testing of the adaptive API Gateway.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Proxy request - normal tenant",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Tenant-Id",
+            "value": "tenant-a"
+          }
+        ],
+        "url": "{{baseUrl}}/api/anything"
+      }
+    },
+    {
+      "name": "Proxy request - stricter auth route",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Tenant-Id",
+            "value": "tenant-a"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "Create blocklist IP",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Admin-Token",
+            "value": "{{adminToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"subjectType\": \"IP\",\n  \"subjectValue\": \"203.0.113.10\",\n  \"mode\": \"BLOCK\",\n  \"reason\": \"Abuse test\"\n}"
+        },
+        "url": "{{baseUrl}}/admin/access-list"
+      }
+    },
+    {
+      "name": "Create allowlist tenant",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Admin-Token",
+            "value": "{{adminToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"subjectType\": \"TENANT\",\n  \"subjectValue\": \"trusted-tenant\",\n  \"mode\": \"ALLOW\",\n  \"reason\": \"Premium internal tenant\"\n}"
+        },
+        "url": "{{baseUrl}}/admin/access-list"
+      }
+    },
+    {
+      "name": "List access-list entries",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Admin-Token",
+            "value": "{{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/access-list"
+      }
+    },
+    {
+      "name": "Dashboard top abusive IPs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Admin-Token",
+            "value": "{{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/dashboard/top-ips?window=PT1H&limit=10"
+      }
+    },
+    {
+      "name": "Dashboard top abusive tenants",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Admin-Token",
+            "value": "{{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/dashboard/top-tenants?window=PT1H&limit=10"
+      }
+    },
+    {
+      "name": "Redis abuse scores - IP",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Admin-Token",
+            "value": "{{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/dashboard/redis-scores?type=ip&limit=10"
+      }
+    },
+    {
+      "name": "Dashboard top routes",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Admin-Token",
+            "value": "{{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/dashboard/top-routes?window=PT1H&limit=10"
+      }
+    },
+    {
+      "name": "Redis abuse scores - Tenant",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Admin-Token",
+            "value": "{{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/dashboard/redis-scores?type=tenant&limit=10"
+      }
+    },
+    {
+      "name": "Current policy",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Admin-Token",
+            "value": "{{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/policy"
+      }
+    },
+    {
+      "name": "Prometheus metrics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/actuator/prometheus"
+      }
+    }
+  ]
+}
