@@ -1,0 +1,24 @@
+{
+  "title": "Adaptive Rate Limit Gateway",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Rate-limit decisions by decision",
+      "targets": [
+        { "expr": "sum by (decision) (rate(gateway_rate_limit_decisions_total[5m]))", "legendFormat": "{{decision}}" }
+      ],
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Gateway p99 latency",
+      "targets": [
+        { "expr": "histogram_quantile(0.99, sum(rate(spring_cloud_gateway_requests_seconds_bucket[5m])) by (le, routeId))", "legendFormat": "{{routeId}}" }
+      ],
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }
+    }
+  ]
+}

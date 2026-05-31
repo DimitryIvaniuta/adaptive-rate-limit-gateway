@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adaptive-rate-limit-gateway
+  labels:
+    app: adaptive-rate-limit-gateway
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: adaptive-rate-limit-gateway
+  template:
+    metadata:
+      labels:
+        app: adaptive-rate-limit-gateway
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /actuator/prometheus
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+        - name: gateway
+          image: ghcr.io/diafter/adaptive-rate-limit-gateway:1.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: GATEWAY_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: adaptive-rate-limit-gateway
+                  key: admin-token
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: REDIS_HOST
+              value: redis
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: kafka:9092
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adaptive-rate-limit-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: adaptive-rate-limit-gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080

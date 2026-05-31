@@ -1,0 +1,19 @@
+groups:
+  - name: adaptive-rate-limit-gateway
+    rules:
+      - alert: GatewayRateLimitedSpike
+        expr: sum(rate(gateway_rate_limit_decisions_total{decision="RATE_LIMITED"}[5m])) > 25
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High rate-limit rejection rate
+          description: The gateway is rejecting more than 25 requests/sec for 5 minutes.
+      - alert: GatewayProtectionInfrastructureErrors
+        expr: sum(rate(gateway_rate_limit_decisions_total{reason="PROTECTION_INFRASTRUCTURE_ERROR"}[5m])) > 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Gateway protection dependency failure
+          description: Redis/PostgreSQL/Kafka protection path is failing and fail-open/closed fallback is active.

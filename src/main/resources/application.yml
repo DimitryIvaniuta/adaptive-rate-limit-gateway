@@ -1,0 +1,124 @@
+server:
+  port: 8080
+  forward-headers-strategy: framework
+  shutdown: graceful
+
+spring:
+  application:
+    name: adaptive-rate-limit-gateway
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  r2dbc:
+    url: r2dbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:gateway}
+    username: ${POSTGRES_USER:gateway}
+    password: ${POSTGRES_PASSWORD:gateway}
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 30
+      max-idle-time: 30m
+  flyway:
+    enabled: true
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:gateway}
+    user: ${POSTGRES_USER:gateway}
+    password: ${POSTGRES_PASSWORD:gateway}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 700ms
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 64
+          max-idle: 16
+          min-idle: 4
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        linger.ms: 10
+        spring.json.add.type.headers: false
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 1000
+            response-timeout: 5s
+            pool:
+              type: elastic
+              max-idle-time: 30s
+          routes:
+            - id: protected-api
+              uri: ${UPSTREAM_API_URI:http://localhost:9080}
+              predicates:
+                - Path=/api/**
+              filters:
+                - StripPrefix=1
+            - id: auth-api
+              uri: ${UPSTREAM_API_URI:http://localhost:9080}
+              predicates:
+                - Path=/auth/**
+              filters:
+                - StripPrefix=1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        spring.cloud.gateway.requests: true
+
+gateway:
+  admin-token: ${GATEWAY_ADMIN_TOKEN:local-admin-token-change-me}
+  trusted-forwarded-headers: true
+  trusted-proxy-cidrs:
+    - 127.0.0.1/32
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+  kafka:
+    enabled: ${GATEWAY_KAFKA_ENABLED:true}
+    abuse-topic: gateway.abuse-events.v1
+  audit:
+    enabled: true
+    persist-allowed-sample-rate: 0.0
+  rate-limit:
+    enabled: true
+    fail-open: true
+    window: PT1M
+    base-limit-per-minute: 120
+    tenant-base-limit-per-minute: 600
+    minimum-limit-per-minute: 10
+    allowlist-bypass: true
+    error-rate-threshold: 0.20
+    abuse-score-hard-block: 100
+    statistics-buckets: 5
+    access-list-cache-ttl: PT1M
+    statistics-ttl: PT10M
+    abuse-score-ttl: PT2H
+    response-error-statuses: [400, 401, 403, 404, 409, 422, 429]
+    route-policies:
+      auth-api:
+        base-limit-per-minute: 30
+        tenant-base-limit-per-minute: 120
+        minimum-limit-per-minute: 5
+        window: PT1M
+        error-rate-threshold: 0.10
+        abuse-score-hard-block: 60
